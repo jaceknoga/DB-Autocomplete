@@ -1,0 +1,45 @@
+{
+  "settings": {
+    "index": {
+      "number_of_replicas": 0,
+      "number_of_shards": 1
+    },
+    "analysis": {
+      "analyzer": {
+        "station_analyzer": {
+          "tokenizer": "station_tokenizer",
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ]
+        }
+      },
+      "tokenizer": {
+        "station_tokenizer": {
+          "type": "pattern",
+          "pattern": "[\\s.,-]+"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "eva_nr": {
+        "type": "text"
+      },
+      "ds100": {
+        "type": "keyword"
+      },
+      "name": {
+        "type": "text"
+      },
+      "verkehr": {
+        "type": "keyword"
+      },
+      "suggestions": {
+        "type": "completion",
+        "analyzer": "station_analyzer"
+      }
+    }
+  }
+}
