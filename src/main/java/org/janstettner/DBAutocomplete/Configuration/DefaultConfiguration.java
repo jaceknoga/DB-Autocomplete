@@ -1,5 +1,6 @@
 package org.janstettner.DBAutocomplete.Configuration;
 
+import lombok.RequiredArgsConstructor;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
@@ -12,10 +13,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@RequiredArgsConstructor
 public class DefaultConfiguration {
+    private final OpenSearchConfiguration openSearchConfiguration;
+
     @Bean
     public OpenSearchClient getOpenSearchClient() {
-        final HttpHost host = new HttpHost("http", "opensearch", 9200);
+        final HttpHost host = new HttpHost(
+                "http",
+                openSearchConfiguration.getHost(),
+                Integer.parseInt(openSearchConfiguration.getPort()));
 
         final ApacheHttpClient5TransportBuilder builder = ApacheHttpClient5TransportBuilder.builder(host);
         builder.setHttpClientConfigCallback(httpClientBuilder -> {

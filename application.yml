@@ -1,0 +1,8 @@
+app:
+  apiKey: ""
+  indexFilename: "stations.json"
+  stationDataFilename: "D_Bahnhof_2020_alle.csv"
+opensearch:
+  host: "opensearch"
+  port: "9200"
+  index: "stations"

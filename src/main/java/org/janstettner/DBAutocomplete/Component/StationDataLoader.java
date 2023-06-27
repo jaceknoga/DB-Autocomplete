@@ -3,6 +3,8 @@ package org.janstettner.DBAutocomplete.Component;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.iterators.PermutationIterator;
+import org.janstettner.DBAutocomplete.Configuration.AppConfiguration;
+import org.janstettner.DBAutocomplete.Configuration.OpenSearchConfiguration;
 import org.janstettner.DBAutocomplete.DTO.Station;
 import org.janstettner.DBAutocomplete.DTO.StationDocument;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -23,16 +25,17 @@ import java.util.Objects;
 public class StationDataLoader {
     private final OpenSearchClient client;
     private final RequestServices requestServices;
+    private final OpenSearchConfiguration openSearchConfiguration;
+    private final AppConfiguration appConfiguration;
 
     public void load() throws IOException {
         var stationDocuments = readStationData();
         var request = new BulkRequest.Builder();
         for (var doc : stationDocuments) {
-            // TODO indexName as env var
             // TODO add higher weight to FV and RV stations
             request.operations(operation -> operation
                     .index(idx -> idx
-                            .index("stations")
+                            .index(openSearchConfiguration.getIndex())
                             .document(doc))
             );
         }
@@ -44,32 +47,34 @@ public class StationDataLoader {
     }
 
     private HashSet<StationDocument> readStationData() throws IOException {
-        // TODO env var
-        var inputStream = getClass().getClassLoader().getResourceAsStream("D_Bahnhof_2020_alle.csv");
-        BufferedReader reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(inputStream)));
+        HashSet<StationDocument> stations;
+        try (var inputStream = getClass().getClassLoader()
+                .getResourceAsStream(appConfiguration.getStationDataFilename())) {
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(Objects.requireNonNull(inputStream)))) {
 
-        // HashSet to avoid duplicates
-        var stations = new HashSet<StationDocument>();
-        var numLines = 0;
-        String line;
+                // HashSet to avoid duplicates
+                stations = new HashSet<>();
+                var numLines = 0;
+                String line;
 
-        while ((line = reader.readLine()) != null) {
-            String[] parts = line.split(";");
-            numLines += 1;
+                while ((line = reader.readLine()) != null) {
+                    String[] parts = line.split(";");
+                    numLines += 1;
 
-            // temporary filter for Fernverkehr
-            // parts[3] for 2016 data
-            if (!Objects.equals(parts[4], "FV")) {
-                continue;
+                    // temporary filter for Fernverkehr
+                    // parts[3] for 2016 data
+                    if (!Objects.equals(parts[4], "FV")) {
+                        continue;
+                    }
+                    // add data from CSV to the Station data transfer object
+                    // for D_Bahnhof_2016_01_alle.csv: (parts[0], parts[1], parts[2], parts[3])
+                    var station = new Station(parts[0], parts[1], parts[3], parts[4]);
+                    stations.add(new StationDocument(station, createSuggestions(station)));
+                }
+                log.info("Read {} lines.", numLines);
             }
-            // add data from CSV to the Station data transfer object
-            // for D_Bahnhof_2016_01_alle.csv: (parts[0], parts[1], parts[2], parts[3])
-            var station = new Station(parts[0], parts[1], parts[3], parts[4]);
-            stations.add(new StationDocument(station, createSuggestions(station)));
         }
-        log.info("Read {} lines.", numLines);
-
-        reader.close();
 
         return stations;
     }

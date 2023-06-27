@@ -2,8 +2,8 @@ package org.janstettner.DBAutocomplete.Suggestion;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.janstettner.DBAutocomplete.Configuration.AppNames;
-import org.janstettner.DBAutocomplete.Configuration.AppNames.Suggestion;
+import org.janstettner.DBAutocomplete.Configuration.OpenSearchConfiguration;
+import org.janstettner.DBAutocomplete.Configuration.OpenSearchFields.Suggestion;
 import org.janstettner.DBAutocomplete.DTO.Station;
 import org.janstettner.DBAutocomplete.DTO.StationDocument;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -22,6 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FVStationSuggestionStrategy {
     private final OpenSearchClient client;
+    private final OpenSearchConfiguration openSearchConfiguration;
 
     public List<String> querySuggestions(String suggestInput) throws IOException {
         var searchResponse = searchSuggestQuery(suggestInput);
@@ -47,7 +48,7 @@ public class FVStationSuggestionStrategy {
                 .text(normalize(suggestInput))
         );
         SearchRequest searchRequest = SearchRequest.of(s -> s
-                .index(AppNames.Index.INDEX_NAME)
+                .index(openSearchConfiguration.getIndex())
 //                    .source(SourceConfig.of(sc -> sc.filter(f -> f.includes(List.of(Suggestion.NAME_FIELD)))))
                 .suggest(suggester));
         return client.search(searchRequest, StationDocument.class);
@@ -55,7 +56,8 @@ public class FVStationSuggestionStrategy {
 
         // A multi-search approach would have been my preferred method, but unfortunately, the documentation
         // for the new Java Client is, as of now, only covering a few basics. Theoretically this way, we could
-        // send two queries with zero fuzziness and with auto fuzziness without negatively effecting response times
+        // send two queries with zero fuzziness and with auto fuzziness, without negatively effecting response times,
+        // and use them to sort for the best results.
 
         // return client.msearch(MsearchRequest.of(ms -> ms.searches(
         //                 List.of(RequestItem.of(ri -> ri

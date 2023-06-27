@@ -1,15 +1,8 @@
 package org.janstettner.DBAutocomplete.Configuration;
 
-public final class AppNames {
+public final class OpenSearchFields {
 
-    private AppNames() {
-    }
-
-    public static class Index {
-        private Index() {
-        }
-
-        public static final String INDEX_NAME = "stations";
+    private OpenSearchFields() {
     }
 
     public static class Suggestion {
