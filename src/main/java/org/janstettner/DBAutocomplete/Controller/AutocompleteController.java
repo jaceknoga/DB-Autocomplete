@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.janstettner.DBAutocomplete.DTO.AutocompleteResponse;
+import org.janstettner.DBAutocomplete.Service.InputValidationService;
 import org.janstettner.DBAutocomplete.Suggestion.FVStationSuggestionStrategy;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.http.HttpStatus;
@@ -36,6 +37,10 @@ public class AutocompleteController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
         var start = System.currentTimeMillis();
+        var validation = InputValidationService.validate(input);
+        if (validation.isPresent()) {
+            return new ResponseEntity<>(validation.get(), HttpStatus.BAD_REQUEST);
+        }
         var suggestions = getSuggestionsFromStrategy(input);
         long timeTaken = System.currentTimeMillis() - start;
         stats.addValue(timeTaken);
