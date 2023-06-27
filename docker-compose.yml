@@ -10,8 +10,6 @@ services:
       - "8080"
     depends_on:
       - opensearch
-    environment:
-      - SPRING_DATA_ELASTICSEARCH_CLUSTER_NODES=elasticsearch:9200
   opensearch:
     image: opensearchproject/opensearch:2.8.0
     environment:
