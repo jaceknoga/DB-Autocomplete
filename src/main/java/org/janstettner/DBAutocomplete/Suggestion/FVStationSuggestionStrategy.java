@@ -36,10 +36,10 @@ public class FVStationSuggestionStrategy {
                 .completion(cs -> cs.skipDuplicates(true)
                         .fuzzy(SuggestFuzziness.of(sf -> sf
                                 .fuzziness("AUTO")
-                                .transpositions(true)
-                                .minLength(3) // Is already the default value
+                                .transpositions(true) // Is already the default value, but config is required
+                                .minLength(3) // See above
                                 .prefixLength(1)
-                                .unicodeAware(true)
+                                .unicodeAware(true) // See above
                         ))
                         .field(Suggestion.SUGGESTIONS_FIELD))
         ));
@@ -49,7 +49,6 @@ public class FVStationSuggestionStrategy {
         );
         SearchRequest searchRequest = SearchRequest.of(s -> s
                 .index(openSearchConfiguration.getIndex())
-//                    .source(SourceConfig.of(sc -> sc.filter(f -> f.includes(List.of(Suggestion.NAME_FIELD)))))
                 .suggest(suggester));
         return client.search(searchRequest, StationDocument.class);
 
@@ -69,7 +68,8 @@ public class FVStationSuggestionStrategy {
     }
 
     private String normalize(String input) {
-        return input.trim().toLowerCase().replaceAll("[\\s.,-]+", " ");
+        // remove all whitespace characters from input
+        return input.trim().toLowerCase().replaceAll("[\\s.,-]+", "");
     }
 
     public List<String> getSuggestionsFromResponse(SearchResponse<StationDocument> searchResponse) {

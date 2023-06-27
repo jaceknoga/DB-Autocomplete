@@ -32,7 +32,11 @@ public class StationDataLoader {
         var stationDocuments = readStationData();
         var request = new BulkRequest.Builder();
         for (var doc : stationDocuments) {
-            // TODO add higher weight to FV and RV stations
+            // TODO
+            // Add higher weight to FV (and RV) stations.
+            // This would automatically give those index documents a higher score when querying
+            // and therefor put them to the beginning of the autocomplete results
+            // END-OF-TODO
             request.operations(operation -> operation
                     .index(idx -> idx
                             .index(openSearchConfiguration.getIndex())
@@ -40,8 +44,9 @@ public class StationDataLoader {
             );
         }
         requestServices.exponentialTimeoutRequest(request.build());
+        // flush indices to force writing the newest changes (bulk request with the station documents)
         var flushResponse = client.indices().flush();
-        log.info("FlushResponse shards failed: {}", flushResponse.shards().failed());
+        log.info("FlushResponse: Number of failed shards: {}", flushResponse.shards().failed());
         log.info("Loaded {} documents.", stationDocuments.size());
 
     }
@@ -59,6 +64,7 @@ public class StationDataLoader {
                 String line;
 
                 while ((line = reader.readLine()) != null) {
+                    // split CSV line into parts
                     String[] parts = line.split(";");
                     numLines += 1;
 
@@ -89,6 +95,8 @@ public class StationDataLoader {
 
     public static List<String> createPermutations(List<String> parts) {
         var permutations = new ArrayList<String>();
+        // The iterator automatically creates all possible permutations, see StationDataLoaderTest for an example
+        // The list has the length: factorial(parts.size())
         var iterator = new PermutationIterator<>(parts);
         while (iterator.hasNext()) {
             permutations.add(String.join(" ", iterator.next()));

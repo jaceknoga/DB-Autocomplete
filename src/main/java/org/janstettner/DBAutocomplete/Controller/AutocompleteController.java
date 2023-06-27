@@ -40,13 +40,16 @@ public class AutocompleteController {
     ) throws IOException {
         // simple API-Key check
         if (!Objects.equals(apiKey, appConfiguration.getApiKey())) {
+            log.info("Unauthorized request!");
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
         // start of request time measurement
         var start = System.currentTimeMillis();
         var validation = InputValidationService.validate(input);
         if (validation.isPresent()) {
-            return new ResponseEntity<>(validation.get(), HttpStatus.BAD_REQUEST);
+            var validationError = validation.get();
+            log.info("Input validation error: {}", validationError.error_code());
+            return new ResponseEntity<>(validationError, HttpStatus.BAD_REQUEST);
         }
         var suggestions = getSuggestionsFromStrategy(input);
         log.info("Requested autocomplete for input \"{}\".", input);

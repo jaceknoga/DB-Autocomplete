@@ -47,18 +47,9 @@ public class StationIndexCreator {
         dataLoader.load();
     }
 
-    private void deleteIndex(String indexName) throws IOException {
-        var deleteRequest = new HttpDelete(getIndexUri());
-        var responseCode = httpClient.execute(deleteRequest, new BasicHttpContext(), HttpResponse::getCode);
-        switch (responseCode) {
-            case 404 -> log.info("Index \"{}\" not found! Continuing...", indexName);
-            case 200 -> log.info("Existing index \"{}\" deleted!", indexName);
-            default -> log.warn("Unexpected response code from OpenSearch: {}. Original delete request: {}",
-                    responseCode, deleteRequest);
-        }
-        client.indices().flush();
-    }
-
+    // The new OpenSearch Java Client (since version 2.x) appears to have a bug when trying to load an index
+    // mapping using a file, when I tried to implement this, the mapping could not be parsed.
+    // Therefor instead, I'm sending a standard HTTP request to the OpenSearch Docker container to create the index.
     private void createIndex(String indexName) throws IOException {
         String jsonMapping;
         try (InputStream in = getClass().getClassLoader().getResourceAsStream(appConfiguration.getIndexFilename())) {
@@ -78,8 +69,24 @@ public class StationIndexCreator {
         log.info("Index \"{}\" created!", indexName);
     }
 
+    // See comment for createIndex(), executing index operations with the new Java Client is not yet well documented.
+    private void deleteIndex(String indexName) throws IOException {
+        var deleteRequest = new HttpDelete(getIndexUri());
+        var responseCode = httpClient.execute(deleteRequest, new BasicHttpContext(), HttpResponse::getCode);
+        switch (responseCode) {
+            case 404 -> log.info("Index \"{}\" not found! Continuing...", indexName);
+            case 200 -> log.info("Existing index \"{}\" deleted!", indexName);
+            default -> log.warn("Unexpected response code from OpenSearch: {}. Original delete request: {}",
+                    responseCode, deleteRequest);
+        }
+        client.indices().flush();
+    }
+
     public void checkClusterHealth() throws IOException {
+        // TODO: add generic healthcheck to docker-compose.yml
         var healthStatus = client.cluster().health().status();
+        // Yellow health status is acceptable as well, as for this app's configuration it only warns about
+        // an unassigned shard (which is a TODO)
         if (healthStatus == HealthStatus.Red) {
             throw new OpenSearchHealthException();
         }

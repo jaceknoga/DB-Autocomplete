@@ -1,5 +1,5 @@
 app:
-  apiKey: ""
+  apiKey: "24DB-Sprintstart42"
   indexFilename: "stations.json"
   stationDataFilename: "D_Bahnhof_2020_alle.csv"
 opensearch:

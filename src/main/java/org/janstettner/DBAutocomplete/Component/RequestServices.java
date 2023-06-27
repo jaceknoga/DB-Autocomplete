@@ -11,6 +11,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RequestServices {
     private final OpenSearchClient client;
+
+    // Sometimes it might happen that OpenSearch is still busy indexing documents from other requests,
+    // so this method sends the same BulkRequest again after a timeout, if there were errors in the first run.
     public void exponentialTimeoutRequest(BulkRequest request) {
         var timeout = 1_000;
         while (true) {
