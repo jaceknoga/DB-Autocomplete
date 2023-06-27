@@ -24,9 +24,7 @@ public class StationDataLoader {
     private final OpenSearchClient client;
     private final RequestServices requestServices;
 
-    //    @Bean
     public void load() throws IOException {
-        log.info("Starting to load data into index.");
         var stationDocuments = readStationData();
         var request = new BulkRequest.Builder();
         for (var doc : stationDocuments) {
@@ -40,24 +38,33 @@ public class StationDataLoader {
         }
         requestServices.exponentialTimeoutRequest(request.build());
         var flushResponse = client.indices().flush();
-        log.info("FlushResponse: {}", flushResponse.toString());
+        log.info("FlushResponse shards failed: {}", flushResponse.shards().failed());
         log.info("Loaded {} documents.", stationDocuments.size());
 
     }
 
     private HashSet<StationDocument> readStationData() throws IOException {
-        var inputStream = getClass().getClassLoader().getResourceAsStream("D_Bahnhof_2016_01_alle.csv");
+        // TODO env var
+        var inputStream = getClass().getClassLoader().getResourceAsStream("D_Bahnhof_2020_alle.csv");
         BufferedReader reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(inputStream)));
 
+        // HashSet to avoid duplicates
         var stations = new HashSet<StationDocument>();
         var numLines = 0;
         String line;
-        // TODO: skip first line?
+
         while ((line = reader.readLine()) != null) {
             String[] parts = line.split(";");
             numLines += 1;
 
-            var station = new Station(parts[0], parts[1], parts[2], parts[3]);
+            // temporary filter for Fernverkehr
+            // parts[3] for 2016 data
+            if (!Objects.equals(parts[4], "FV")) {
+                continue;
+            }
+            // add data from CSV to the Station data transfer object
+            // for D_Bahnhof_2016_01_alle.csv: (parts[0], parts[1], parts[2], parts[3])
+            var station = new Station(parts[0], parts[1], parts[3], parts[4]);
             stations.add(new StationDocument(station, createSuggestions(station)));
         }
         log.info("Read {} lines.", numLines);
@@ -67,7 +74,7 @@ public class StationDataLoader {
         return stations;
     }
 
-    private List<String> createSuggestions(Station station) {
+    private static List<String> createSuggestions(Station station) {
         var parts = new ArrayList<>(List.of(
                 station.evaNr(),
                 station.ds100(),
@@ -75,7 +82,7 @@ public class StationDataLoader {
         return createPermutations(parts);
     }
 
-    private List<String> createPermutations(ArrayList<String> parts) {
+    public static List<String> createPermutations(List<String> parts) {
         var permutations = new ArrayList<String>();
         var iterator = new PermutationIterator<>(parts);
         while (iterator.hasNext()) {

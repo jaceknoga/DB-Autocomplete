@@ -3,7 +3,7 @@ package org.janstettner.DBAutocomplete.Controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.janstettner.DBAutocomplete.DTO.SuggestOutput;
+import org.janstettner.DBAutocomplete.DTO.AutocompleteResponse;
 import org.janstettner.DBAutocomplete.Suggestion.FVStationSuggestionStrategy;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.http.HttpStatus;
@@ -36,15 +36,20 @@ public class AutocompleteController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
         var start = System.currentTimeMillis();
-        var result = createResponse(input);
-        stats.addValue(System.currentTimeMillis() - start);
+        var suggestions = getSuggestionsFromStrategy(input);
+        long timeTaken = System.currentTimeMillis() - start;
+        stats.addValue(timeTaken);
         if (stats.getN() % 10 == 0) {
             // TODO: This log output doesn't seem to work, or the if-clause is faulty
             log.debug(String.valueOf(stats));
         }
+
+        var result = new AutocompleteResponse(suggestions, timeTaken + "ms", String.valueOf(suggestions.size()));
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
-    private List<SuggestOutput> createResponse(String input) throws IOException {
+
+    private List<String> getSuggestionsFromStrategy(String input) throws IOException {
+        // TODO: possible StrategyFactory to get suggestions only for RV or all types
         var strategy = new
                 FVStationSuggestionStrategy(client);
         return strategy.querySuggestions(input);

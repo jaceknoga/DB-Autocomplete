@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hc.client5.http.classic.methods.HttpDelete;
 import org.apache.hc.client5.http.classic.methods.HttpPut;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.BasicHttpContext;
 import org.janstettner.DBAutocomplete.Exceptions.OpenSearchHealthException;
@@ -28,19 +30,39 @@ public class StationIndexCreator {
 
     @PostConstruct
     public void init() throws IOException {
+        var indexName = "stations";
+
         log.info("Checking OpenSearch cluster health.");
         checkClusterHealth();
 
-        // TODO: delete index automatically
-        log.info("Starting to create OpenSearch index!");
-        var indexName = "stations";
+        log.info("Deleting old OpenSearch index!");
+        deleteIndex(indexName);
 
+        log.info("Starting to create new OpenSearch index!");
+        createIndex(indexName);
+
+        log.info("Starting to load data into index.");
+        dataLoader.load();
+    }
+
+    private void deleteIndex(String indexName) throws IOException {
+        var deleteRequest = new HttpDelete(URI.create("http://localhost:9200/" + indexName));
+        var responseCode = httpClient.execute(deleteRequest, new BasicHttpContext(), HttpResponse::getCode);
+        switch (responseCode) {
+            case 404 -> log.info("Index \"{}\" not found! Continuing...", indexName);
+            case 200 -> log.info("Existing index \"{}\" deleted!", indexName);
+            default -> log.warn("Unexpected response code from OpenSearch: {}. Original delete request: {}",
+                    responseCode, deleteRequest);
+        }
+        client.indices().flush();
+    }
+
+    private void createIndex(String indexName) throws IOException {
         String jsonMapping;
         try (InputStream in = getClass().getClassLoader().getResourceAsStream("stations.json")) {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode jsonNode = mapper.readValue(in, JsonNode.class);
             jsonMapping = mapper.writeValueAsString(jsonNode);
-            log.info(jsonMapping);
         } catch (Exception e) {
             throw new IOException(e);
         }
@@ -51,9 +73,7 @@ public class StationIndexCreator {
         var response = httpClient.execute(putRequest, new BasicHttpContext(), Object::toString);
         log.info(response);
 
-        log.info("Index created!");
-
-        dataLoader.load();
+        log.info("Index \"{}\" created!", indexName);
     }
 
     public void checkClusterHealth() throws IOException {
