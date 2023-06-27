@@ -11,6 +11,7 @@ COPY ../src ./src
 
 CMD ["./mvnw", "spring-boot:run"]
 
+# TODO: Optimize build process and use smaller images, especially a JRE for the final container image
 #FROM eclipse-temurin:20-jre-jammy
 #WORKDIR /app
 #COPY --from=build /app/target/myapp.jar ./myapp.jar
