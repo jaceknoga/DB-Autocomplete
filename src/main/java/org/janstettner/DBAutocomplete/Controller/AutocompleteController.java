@@ -3,7 +3,6 @@ package org.janstettner.DBAutocomplete.Controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.janstettner.DBAutocomplete.Configuration.AppConfiguration;
 import org.janstettner.DBAutocomplete.Configuration.OpenSearchConfiguration;
 import org.janstettner.DBAutocomplete.DTO.AutocompleteResponse;
 import org.janstettner.DBAutocomplete.Service.InputValidationService;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -25,24 +23,25 @@ import java.util.Objects;
 public class AutocompleteController {
     private final OpenSearchClient client;
     private final DescriptiveStatistics stats = new DescriptiveStatistics();
-    private final AppConfiguration appConfiguration;
     private final OpenSearchConfiguration openSearchConfiguration;
 
     // TODO: Add OpenAPI Swagger
-//    @Operation(summary = "Suggests completions for Deutsche Bahn stations from an input")
+    //  @Operation(summary = "Suggests completions for Deutsche Bahn stations from an input")
     @GetMapping(path = "/auto-complete/{input}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Object> autoComplete(
-            @PathVariable String input,
+            @PathVariable String input
             // TODO: Support for FV / RV / ALL station types
             //  @Validated @RequestHeader(name = "x-station-type", defaultValue = StationType.ALL) StationType stationType,
-            @RequestHeader("x-api-key") String apiKey
+            //  @RequestHeader("x-api-key") String apiKey
     ) throws IOException {
+        // TODO: re-enable API key check. Disabled for easier testing
         // simple API-Key check
-        if (!Objects.equals(apiKey, appConfiguration.getApiKey())) {
-            log.info("Unauthorized request!");
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        }
+        // if (!Objects.equals(apiKey, appConfiguration.getApiKey())) {
+        //     log.info("Unauthorized request!");
+        //     return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        // }
+
         // start of request time measurement
         var start = System.currentTimeMillis();
         var validation = InputValidationService.validate(input);
