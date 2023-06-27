@@ -1,4 +1,4 @@
-package org.janstettner.DBAutocomplete.Components;
+package org.janstettner.DBAutocomplete.Component;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

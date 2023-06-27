@@ -1,4 +1,4 @@
-package org.janstettner.DBAutocomplete.Components;
+package org.janstettner.DBAutocomplete.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,7 +11,7 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.BasicHttpContext;
-import org.janstettner.DBAutocomplete.Exceptions.OpenSearchHealthException;
+import org.janstettner.DBAutocomplete.Exception.OpenSearchHealthException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.HealthStatus;
 import org.springframework.stereotype.Component;
@@ -46,7 +46,7 @@ public class StationIndexCreator {
     }
 
     private void deleteIndex(String indexName) throws IOException {
-        var deleteRequest = new HttpDelete(URI.create("http://localhost:9200/" + indexName));
+        var deleteRequest = new HttpDelete(URI.create("http://opensearch:9200/" + indexName));
         var responseCode = httpClient.execute(deleteRequest, new BasicHttpContext(), HttpResponse::getCode);
         switch (responseCode) {
             case 404 -> log.info("Index \"{}\" not found! Continuing...", indexName);
@@ -67,7 +67,7 @@ public class StationIndexCreator {
             throw new IOException(e);
         }
 
-        var putRequest = new HttpPut(URI.create("http://localhost:9200/" + indexName));
+        var putRequest = new HttpPut(URI.create("http://opensearch:9200/" + indexName));
         putRequest.setHeader("Content-Type", "application/json");
         putRequest.setEntity(new StringEntity(jsonMapping));
         var response = httpClient.execute(putRequest, new BasicHttpContext(), Object::toString);

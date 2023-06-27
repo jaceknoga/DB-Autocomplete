@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
 public class DefaultConfiguration {
     @Bean
     public OpenSearchClient getOpenSearchClient() {
-        final HttpHost host = new HttpHost("http", "localhost", 9200);
+        final HttpHost host = new HttpHost("http", "opensearch", 9200);
 
         final ApacheHttpClient5TransportBuilder builder = ApacheHttpClient5TransportBuilder.builder(host);
         builder.setHttpClientConfigCallback(httpClientBuilder -> {

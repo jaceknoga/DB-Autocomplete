@@ -1,4 +1,4 @@
-package org.janstettner.DBAutocomplete.Exceptions;
+package org.janstettner.DBAutocomplete.Exception;
 
 public class OpenSearchHealthException extends RuntimeException {
 }
